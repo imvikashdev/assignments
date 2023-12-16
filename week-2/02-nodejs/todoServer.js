@@ -39,11 +39,92 @@
 
   Testing the server - run `npm run test-todoServer` command in terminal
  */
-  const express = require('express');
-  const bodyParser = require('body-parser');
-  
-  const app = express();
-  
-  app.use(bodyParser.json());
-  
-  module.exports = app;
+const express = require('express');
+const bodyParser = require('body-parser');
+const fs = require('fs');
+const path = require('path');
+
+const app = express();
+
+app.use(bodyParser.json());
+
+const todoPath = path.join(__dirname, 'files/todos.json');
+
+const todos = fs.existsSync(todoPath)
+  ? JSON.parse(fs.readFileSync(path.join(todoPath), 'utf8'))
+  : [];
+
+app.get('/todos', (req, res) => {
+  res.status(200).json(todos);
+});
+
+app.get('/todos/:id', (req, res) => {
+  const { id } = req.params;
+
+  const todo = todos.find((todo) => todo.id === id);
+
+  if (!todo) {
+    return res.status(404).send('Todo not found');
+  }
+
+  return res.status(200).json(todo);
+});
+
+app.post('/todos', (req, res) => {
+  const { title, description } = req.body;
+
+  const todo = {
+    id: Math.random().toString(36).substr(2, 9),
+    title,
+    description,
+    completed: false,
+  };
+
+  todos.push(todo);
+
+  fs.writeFileSync(todoPath, JSON.stringify(todos));
+
+  return res.status(201).json(todo);
+});
+
+app.put('/todos/:id', (req, res) => {
+  const { id } = req.params;
+
+  const todo = todos.find((todo) => todo.id === id);
+
+  if (!todo) {
+    return res.status(404).send('Todo not found');
+  }
+
+  const { title, description, completed } = req.body;
+
+  todo.title = title;
+  todo.description = description;
+  todo.completed = completed;
+
+  fs.writeFileSync(todoPath, JSON.stringify(todos));
+
+  return res.status(200).json(todo);
+});
+
+app.delete('/todos/:id', (req, res) => {
+  const { id } = req.params;
+
+  const todoIndex = todos.findIndex((todo) => todo.id === id);
+
+  if (todoIndex === -1) {
+    return res.status(404).send('Todo not found');
+  }
+
+  todos.splice(todoIndex, 1);
+
+  fs.writeFileSync(todoPath, JSON.stringify(todos));
+
+  return res.status(200).send('Todo deleted');
+});
+
+app.all('*', (req, res) => {
+  res.status(404).send('Route not found');
+});
+
+module.exports = app;
