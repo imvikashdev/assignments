@@ -1,8 +1,12 @@
-const recursionTimer = (start, gap) => {
+const recursionTimer = (start, gap, customCallback) => {
   setTimeout(() => {
-    console.log(start);
-    recursionTimer(start + gap, gap);
+    customCallback(start);
+    recursionTimer(start + gap, gap, customCallback);
   }, gap * 1000);
 };
 
-recursionTimer(1, 3);
+// recursionTimer(1, 1, (count) => {
+//   console.log(count);
+// });
+
+exports.recursionTimer = recursionTimer;
